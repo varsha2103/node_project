@@ -4,7 +4,7 @@ const config = require('config');
 const router = express.Router();
 const auth = require('../../middleware/auth');
 const { check, validationResult } = require('express-validator');
-// bring in normalize to give us a proper url, regardless of what user entered
+
 const normalize = require('normalize-url');
 const checkObjectId = require('../../middleware/checkObjectId');
 
@@ -46,7 +46,6 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // destructure the request
     const {
       website,
       skills,
@@ -55,11 +54,10 @@ router.post(
       instagram,
       linkedin,
       facebook,
-      // spread the rest of the fields we don't need to check
+
       ...rest
     } = req.body;
 
-    // build a profile
     const profileFields = {
       user: req.user.id,
       website:
@@ -72,19 +70,16 @@ router.post(
       ...rest
     };
 
-    // Build socialFields object
     const socialFields = { youtube, twitter, instagram, linkedin, facebook };
 
-    // normalize social fields to ensure valid url
     for (const [key, value] of Object.entries(socialFields)) {
       if (value && value.length > 0)
         socialFields[key] = normalize(value, { forceHttps: true });
     }
-    // add to profileFields
+
     profileFields.social = socialFields;
 
     try {
-      // Using upsert option (creates new doc if no match is found):
       let profile = await Profile.findOneAndUpdate(
         { user: req.user.id },
         { $set: profileFields },
@@ -138,9 +133,6 @@ router.get(
 // @access   Private
 router.delete('/', auth, async (req, res) => {
   try {
-    // Remove user posts
-    // Remove profile
-    // Remove user
     await Promise.all([
       Post.deleteMany({ user: req.user.id }),
       Profile.findOneAndRemove({ user: req.user.id }),
